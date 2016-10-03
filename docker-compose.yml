@@ -1,0 +1,47 @@
+version: '2'
+services:
+    zk1-dc1:
+      image: zookeeper:3.4.9
+      environment:
+        ZOO_MY_ID: 1
+        ZOO_SERVERS: server.1=zk1-dc1:2888:3888
+    kafka1-dc1:
+      image: wurstmeister/kafka:0.10.0.1
+      hostname: kafka1-dc1
+      environment:
+        KAFKA_ADVERTISED_HOST_NAME: kafka1-dc1
+        KAFKA_ADVERTISED_PORT: 9092
+        KAFKA_BROKER_ID: 1
+        KAFKA_ZOOKEEPER_CONNECT: zk1-dc1:2181
+        KAFKA_CREATE_TOPICS: "mirror.maker.topic:1:1"
+      links:
+        - zk1-dc1
+    zk1-dc2:
+      image: zookeeper:3.4.9
+      environment:
+        ZOO_MY_ID: 1
+        ZOO_SERVERS: server.1=zk1-dc2:2888:3888
+    kafka1-dc2:
+      image: wurstmeister/kafka:0.10.0.1
+      hostname: kafka1-dc2
+      environment:
+        KAFKA_ADVERTISED_HOST_NAME: kafka1-dc2
+        KAFKA_ADVERTISED_PORT: 9092
+        KAFKA_BROKER_ID: 1
+        KAFKA_ZOOKEEPER_CONNECT: zk1-dc2:2181
+      links:
+        - zk1-dc2
+    mirror-maker:
+      image: wurstmeister/kafka:0.10.0.1
+      command: "/scripts/mirror-maker-entrypoint.sh"
+      links: 
+        - zk1-dc1
+        - kafka1-dc1
+        - zk1-dc2
+        - kafka1-dc2
+      volumes:
+        - "./scripts:/scripts:ro"
+        - "./config/consumer.properties:/opt/kafka_2.11-0.10.0.1/config/consumer.properties:ro"
+        - "./config/producer.properties:/opt/kafka_2.11-0.10.0.1/config/producer.properties:ro"
+
+
